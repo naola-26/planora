@@ -19,14 +19,12 @@ $successMsg = $_SESSION['schedule_success'] ?? '';
 $errorMsg   = $_SESSION['schedule_error']   ?? '';
 unset($_SESSION['schedule_success'], $_SESSION['schedule_error']);
 
-// Group sessions by date
 $byDate = [];
 foreach ($schedules as $session) {
     $byDate[$session['scheduled_date']][] = $session;
 }
 ksort($byDate);
 
-// Per-subject stats
 $subjectStats = [];
 foreach ($subjects as $sub) {
     $subjectStats[$sub['id']] = [
@@ -49,13 +47,13 @@ foreach ($schedules as $session) {
     if ($session['status'] === 'missed')    $subjectStats[$sid]['missed']++;
 }
 
-$today    = date('Y-m-d');
-$total    = (int)($stats['total']      ?? 0);
-$completed= (int)($stats['completed'] ?? 0);
-$missed   = (int)($stats['missed']    ?? 0);
-$pending  = (int)($stats['pending']   ?? 0);
-$hours    = (float)($stats['total_hours'] ?? 0);
-$rate     = $total > 0 ? round(($completed / $total) * 100) : 0;
+$today     = date('Y-m-d');
+$total     = (int)($stats['total']      ?? 0);
+$completed = (int)($stats['completed'] ?? 0);
+$missed    = (int)($stats['missed']    ?? 0);
+$pending   = (int)($stats['pending']   ?? 0);
+$hours     = (float)($stats['total_hours'] ?? 0);
+$rate      = $total > 0 ? round(($completed / $total) * 100) : 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -63,6 +61,8 @@ $rate     = $total > 0 ? round(($completed / $total) * 100) : 0;
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyPlanner — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -77,204 +77,173 @@ $rate     = $total > 0 ? round(($completed / $total) * 100) : 0;
       --error: #c0392b;
       --success: #2eab6f;
       --warning: #e67e22;
-      --radius: 10px;
+      --radius: 12px;
     }
 
     body {
-      font-family: system-ui, -apple-system, sans-serif;
+      font-family: 'DM Sans', system-ui, sans-serif;
       background: var(--paper);
       color: var(--ink);
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* NAV */
     nav {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 1rem 2rem; background: white;
+      padding: 1rem 2.5rem; background: white;
       border-bottom: 1px solid var(--border);
       position: sticky; top: 0; z-index: 10;
     }
-    .nav-logo { font-size: 1rem; font-weight: 600; color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 8px; }
-    .nav-logo-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; }
-    .nav-links { display: flex; align-items: center; gap: 1.5rem; }
-    .nav-links a { font-size: 0.85rem; color: var(--ink-2); text-decoration: none; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 500; color: var(--ink); text-decoration: none; }
+    .nav-logo-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+    .nav-links { display: flex; align-items: center; gap: 2rem; }
+    .nav-links a { font-size: 0.85rem; color: var(--ink-3); text-decoration: none; transition: color 150ms; }
     .nav-links a:hover { color: var(--ink); }
     .nav-links a.active { color: var(--accent); font-weight: 500; }
-    .nav-user { font-size: 0.8rem; color: var(--ink-3); }
+    .nav-right { font-size: 0.8rem; color: var(--ink-3); }
 
-    .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .container { max-width: 960px; margin: 0 auto; padding: 2.5rem 2rem; }
 
-    /* MESSAGES */
     .msg { font-size: 0.85rem; padding: 0.75rem 1rem; border-radius: var(--radius); margin-bottom: 1.5rem; }
     .msg-success { background: #f0faf5; border: 1px solid #a8e0c4; color: var(--success); }
     .msg-error   { background: #fdf2f2; border: 1px solid #f5c6c6; color: var(--error); }
 
-    /* STATS ROW */
+    /* STATS */
     .stats-row {
       display: grid; grid-template-columns: repeat(5, 1fr);
-      gap: 10px; margin-bottom: 1.5rem;
+      gap: 10px; margin-bottom: 1.25rem;
     }
     .stat-card {
       background: white; border: 1px solid var(--border);
-      border-radius: 12px; padding: 1rem 1.1rem;
+      border-radius: var(--radius); padding: 1.1rem 1.25rem;
     }
-    .stat-num {
-      font-size: 1.6rem; font-weight: 700;
-      color: var(--ink); line-height: 1; margin-bottom: 4px;
-    }
-    .stat-num.accent { color: var(--accent); }
-    .stat-num.success { color: var(--success); }
-    .stat-num.error { color: var(--error); }
-    .stat-label { font-size: 0.72rem; color: var(--ink-3); letter-spacing: 0.04em; text-transform: uppercase; }
+    .stat-num { font-size: 1.75rem; font-weight: 700; color: var(--ink); line-height: 1; margin-bottom: 4px; }
+    .stat-num.c-accent   { color: var(--accent); }
+    .stat-num.c-success  { color: var(--success); }
+    .stat-num.c-error    { color: var(--error); }
+    .stat-label { font-size: 0.7rem; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; }
 
-    /* COMPLETION BAR */
+    /* COMPLETION */
     .completion-card {
       background: white; border: 1px solid var(--border);
-      border-radius: 12px; padding: 1.1rem 1.25rem;
+      border-radius: var(--radius); padding: 1rem 1.25rem;
+      display: flex; align-items: center; gap: 1rem;
       margin-bottom: 1.5rem;
-      display: flex; align-items: center; gap: 1.5rem;
     }
-    .completion-label { font-size: 0.82rem; font-weight: 500; color: var(--ink-2); white-space: nowrap; }
-    .bar-wrap { flex: 1; background: var(--paper-2); border-radius: 99px; height: 8px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width 600ms ease; }
+    .completion-label { font-size: 0.82rem; color: var(--ink-2); white-space: nowrap; font-weight: 500; }
+    .bar-wrap { flex: 1; background: var(--paper-2); border-radius: 99px; height: 7px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 99px; transition: width 600ms ease; }
     .bar-fill.good    { background: var(--success); }
     .bar-fill.warning { background: var(--warning); }
     .bar-fill.danger  { background: var(--error); }
-    .completion-pct { font-size: 0.9rem; font-weight: 700; color: var(--ink); white-space: nowrap; min-width: 36px; text-align: right; }
+    .bar-fill.zero    { background: var(--border); }
+    .completion-pct { font-size: 0.9rem; font-weight: 700; color: var(--ink); min-width: 38px; text-align: right; }
 
-    /* TWO COL LAYOUT */
-    .two-col { display: grid; grid-template-columns: 1fr 340px; gap: 1.25rem; align-items: start; }
+    /* TWO COL */
+    .two-col { display: grid; grid-template-columns: 1fr 380px; gap: 1.25rem; align-items: start; }
 
-    /* SUBJECT CARDS */
-    .section-title {
-      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em;
-      text-transform: uppercase; color: var(--ink-3);
-      margin-bottom: 0.75rem;
-    }
+    /* SECTION TITLE */
+    .section-title { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 0.75rem; }
 
+    /* SUBJECT PROGRESS */
     .subject-progress-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.5rem; }
 
-    .subject-progress-card {
+    .sp-card {
       background: white; border: 1px solid var(--border);
-      border-radius: 12px; padding: 1rem 1.25rem;
+      border-radius: var(--radius); padding: 1rem 1.25rem;
     }
-
-    .sp-top {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 0.75rem;
-    }
+    .sp-top { display: flex; align-items: center; gap: 10px; margin-bottom: 0.6rem; }
     .sp-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-    .sp-name { font-size: 0.9rem; font-weight: 500; color: var(--ink); flex: 1; }
-
-    .sp-countdown {
-      font-size: 0.72rem; font-weight: 600;
-      padding: 2px 8px; border-radius: 99px;
-      white-space: nowrap;
-    }
+    .sp-name { font-size: 0.9rem; font-weight: 500; color: var(--ink); flex: 1; min-width: 0; }
+    .sp-countdown { font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
     .sp-countdown.urgent  { background: #fdf2f2; color: var(--error); }
     .sp-countdown.soon    { background: #fef9ec; color: var(--warning); }
     .sp-countdown.relaxed { background: var(--paper-2); color: var(--ink-3); }
 
-    .sp-bar-wrap { background: var(--paper-2); border-radius: 99px; height: 5px; overflow: hidden; margin-bottom: 0.6rem; }
+    .sp-bar-wrap { background: var(--paper-2); border-radius: 99px; height: 4px; overflow: hidden; margin-bottom: 0.6rem; }
     .sp-bar-fill { height: 100%; border-radius: 99px; transition: width 600ms ease; }
 
-    .sp-meta {
-      display: flex; gap: 1rem;
-      font-size: 0.72rem; color: var(--ink-3);
-    }
-    .sp-meta span { display: flex; align-items: center; gap: 3px; }
+    .sp-meta { display: flex; gap: 1rem; font-size: 0.72rem; color: var(--ink-3); }
 
-    /* GENERATE BTN */
-    .generate-bar {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 0.75rem;
-    }
+    /* GENERATE */
+    .generate-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
     .btn-generate {
       display: inline-flex; align-items: center; gap: 6px;
       background: var(--accent); color: white;
       font-size: 0.8rem; font-weight: 500;
       padding: 0.55rem 1.1rem; border-radius: var(--radius);
-      border: none; cursor: pointer; transition: opacity 150ms;
+      border: none; cursor: pointer; font-family: 'DM Sans', system-ui, sans-serif;
+      transition: opacity 150ms;
     }
     .btn-generate:hover { opacity: 0.88; }
 
-    /* SCHEDULE SIDEBAR */
+    /* EMPTY */
+    .empty { text-align: center; padding: 2.5rem 1rem; color: var(--ink-3); font-size: 0.875rem; border: 1.5px dashed var(--border); border-radius: var(--radius); }
+    .empty-icon { font-size: 1.75rem; margin-bottom: 0.5rem; }
+
+    /* SCHEDULE PANEL */
     .schedule-panel {
       background: white; border: 1px solid var(--border);
-      border-radius: 12px; overflow: hidden;
+      border-radius: var(--radius); overflow: hidden;
       position: sticky; top: 80px;
     }
-    .schedule-panel-header {
-      padding: 0.85rem 1.1rem;
+    .panel-header {
+      padding: 0.9rem 1.25rem;
       border-bottom: 1px solid var(--border);
       display: flex; align-items: center; justify-content: space-between;
     }
-    .schedule-panel-title { font-size: 0.85rem; font-weight: 600; color: var(--ink); }
-    .schedule-panel-body { max-height: 520px; overflow-y: auto; }
-
-    /* EMPTY */
-    .empty {
-      text-align: center; padding: 2.5rem 1rem;
-      color: var(--ink-3); font-size: 0.875rem;
-      border: 1.5px dashed var(--border); border-radius: 12px;
-    }
-    .empty-icon { font-size: 1.75rem; margin-bottom: 0.5rem; }
+    .panel-title { font-size: 0.9rem; font-weight: 600; color: var(--ink); }
+    .panel-count { font-size: 0.75rem; color: var(--ink-3); }
+    .panel-body { max-height: 560px; overflow-y: auto; }
 
     /* DATE GROUP */
-    .date-group { padding: 0.75rem 1.1rem; border-bottom: 1px solid var(--paper-2); }
+    .date-group { padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--paper-2); }
     .date-group:last-child { border-bottom: none; }
 
-    .date-heading {
-      font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em;
+    .date-label {
+      font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em;
       text-transform: uppercase; color: var(--ink-3);
-      margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+      margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
     }
-    .date-heading.is-today { color: var(--accent); }
-    .today-pill {
-      font-size: 0.6rem; background: var(--accent); color: white;
-      padding: 1px 6px; border-radius: 99px; font-weight: 600;
-    }
+    .date-label.today { color: var(--accent); }
+    .today-pill { font-size: 0.6rem; background: var(--accent); color: white; padding: 1px 6px; border-radius: 99px; }
 
     /* SESSION ROW */
     .session-row {
-      display: flex; align-items: center; gap: 8px;
-      padding: 6px 0; border-bottom: 1px solid var(--paper-2);
+      display: grid;
+      grid-template-columns: 3px 1fr auto auto;
+      gap: 10px;
+      align-items: start;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--paper-2);
     }
     .session-row:last-child { border-bottom: none; }
     .session-row.completed { opacity: 0.5; }
-    .session-row.missed { opacity: 0.6; }
+    .session-row.missed { opacity: 0.65; }
 
-    .session-bar { width: 3px; height: 28px; border-radius: 99px; flex-shrink: 0; }
-    .session-info { flex: 1; min-width: 0; }
-    .session-name { font-size: 0.8rem; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .session-note { font-size: 0.7rem; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .session-dur  { font-size: 0.72rem; color: var(--ink-3); white-space: nowrap; flex-shrink: 0; }
+    .session-bar { width: 3px; border-radius: 99px; min-height: 28px; align-self: stretch; }
+    .session-info { min-width: 0; }
+    .session-name { font-size: 0.82rem; font-weight: 500; color: var(--ink); line-height: 1.3; margin-bottom: 2px; }
+    .session-note { font-size: 0.72rem; color: var(--ink-3); line-height: 1.4; }
+    .session-dur  { font-size: 0.75rem; color: var(--ink-3); white-space: nowrap; padding-top: 2px; }
 
-    .session-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .session-actions { display: flex; gap: 4px; align-items: center; padding-top: 1px; }
     .btn-s {
-      font-size: 0.65rem; font-weight: 600;
-      padding: 3px 7px; border-radius: 99px;
-      border: 1px solid var(--border); background: white;
-      cursor: pointer; color: var(--ink-2); transition: all 120ms;
+      font-size: 0.65rem; font-weight: 600; padding: 3px 7px;
+      border-radius: 99px; border: 1px solid var(--border);
+      background: white; cursor: pointer; color: var(--ink-2);
+      transition: all 120ms; font-family: 'DM Sans', system-ui, sans-serif;
     }
-    .btn-s.done:hover   { background: #f0faf5; border-color: #a8e0c4; color: var(--success); }
-    .btn-s.miss:hover   { background: #fdf2f2; border-color: #f5c6c6; color: var(--error); }
+    .btn-s.done:hover  { background: #f0faf5; border-color: #a8e0c4; color: var(--success); }
+    .btn-s.miss:hover  { background: #fdf2f2; border-color: #f5c6c6; color: var(--error); }
 
-    .status-pill {
-      font-size: 0.65rem; font-weight: 600;
-      padding: 2px 7px; border-radius: 99px; flex-shrink: 0;
-    }
+    .status-pill { font-size: 0.65rem; font-weight: 600; padding: 2px 7px; border-radius: 99px; white-space: nowrap; }
     .pill-completed { background: #f0faf5; color: var(--success); }
     .pill-missed    { background: #fdf2f2; color: var(--error); }
 
-    /* EMPTY SCHEDULE */
-    .empty-schedule {
-      padding: 2rem 1rem; text-align: center;
-      font-size: 0.82rem; color: var(--ink-3); line-height: 1.6;
-    }
+    .empty-schedule { padding: 2rem 1rem; text-align: center; font-size: 0.82rem; color: var(--ink-3); line-height: 1.6; }
 
-    @media (max-width: 680px) {
+    @media (max-width: 720px) {
       .two-col { grid-template-columns: 1fr; }
       .stats-row { grid-template-columns: repeat(3, 1fr); }
       .schedule-panel { position: static; }
@@ -293,7 +262,7 @@ $rate     = $total > 0 ? round(($completed / $total) * 100) : 0;
     <a href="/availability/">Availability</a>
     <a href="/dashboard/" class="active">Dashboard</a>
   </div>
-  <span class="nav-user">
+  <span class="nav-right">
     <?= htmlspecialchars($user['name']) ?> &nbsp;·&nbsp;
     <a href="/auth/?action=logout" style="color:var(--ink-3);text-decoration:none;">Log out</a>
   </span>
@@ -308,18 +277,18 @@ $rate     = $total > 0 ? round(($completed / $total) * 100) : 0;
     <div class="msg msg-error">⚠ <?= htmlspecialchars($errorMsg) ?></div>
   <?php endif; ?>
 
-  <!-- STATS ROW -->
+  <!-- STATS -->
   <div class="stats-row">
     <div class="stat-card">
-      <p class="stat-num accent"><?= $total ?></p>
+      <p class="stat-num c-accent"><?= $total ?></p>
       <p class="stat-label">Sessions</p>
     </div>
     <div class="stat-card">
-      <p class="stat-num success"><?= $completed ?></p>
+      <p class="stat-num c-success"><?= $completed ?></p>
       <p class="stat-label">Completed</p>
     </div>
     <div class="stat-card">
-      <p class="stat-num error"><?= $missed ?></p>
+      <p class="stat-num c-error"><?= $missed ?></p>
       <p class="stat-label">Missed</p>
     </div>
     <div class="stat-card">
@@ -333,8 +302,8 @@ $rate     = $total > 0 ? round(($completed / $total) * 100) : 0;
   </div>
 
   <!-- COMPLETION BAR -->
-  <?php if ($total > 0):
-    $barClass = $rate >= 70 ? 'good' : ($rate >= 40 ? 'warning' : 'danger');
+  <?php
+    $barClass = $total === 0 ? 'zero' : ($rate >= 70 ? 'good' : ($rate >= 40 ? 'warning' : 'danger'));
   ?>
   <div class="completion-card">
     <span class="completion-label">Overall completion</span>
@@ -343,37 +312,29 @@ $rate     = $total > 0 ? round(($completed / $total) * 100) : 0;
     </div>
     <span class="completion-pct"><?= $rate ?>%</span>
   </div>
-  <?php endif; ?>
 
   <div class="two-col">
 
-    <!-- LEFT: SUBJECT PROGRESS + GENERATE -->
+    <!-- LEFT -->
     <div>
 
-      <!-- SUBJECT PROGRESS -->
       <?php if (!empty($subjectStats)): ?>
         <p class="section-title">Subject progress</p>
         <div class="subject-progress-list">
           <?php foreach ($subjectStats as $sid => $ss):
-            $daysLeft  = (int) ceil((strtotime($ss['exam_date']) - time()) / 86400);
-            $spRate    = $ss['total'] > 0
-              ? round(($ss['completed'] / $ss['total']) * 100)
-              : 0;
-            $urgency   = $daysLeft <= 3 ? 'urgent' : ($daysLeft <= 7 ? 'soon' : 'relaxed');
-            $countdownLabel = $daysLeft <= 0
-              ? 'Exam passed'
-              : ($daysLeft === 1 ? 'Tomorrow!' : "$daysLeft days left");
+            $daysLeft = (int) ceil((strtotime($ss['exam_date']) - time()) / 86400);
+            $spRate   = $ss['total'] > 0 ? round(($ss['completed'] / $ss['total']) * 100) : 0;
+            $urgency  = $daysLeft <= 3 ? 'urgent' : ($daysLeft <= 7 ? 'soon' : 'relaxed');
+            $cdLabel  = $daysLeft <= 0 ? 'Exam passed' : ($daysLeft === 1 ? 'Tomorrow!' : "{$daysLeft} days left");
           ?>
-            <div class="subject-progress-card">
+            <div class="sp-card">
               <div class="sp-top">
                 <div class="sp-dot" style="background:<?= htmlspecialchars($ss['color']) ?>"></div>
                 <span class="sp-name"><?= htmlspecialchars($ss['name']) ?></span>
-                <span class="sp-countdown <?= $urgency ?>"><?= $countdownLabel ?></span>
+                <span class="sp-countdown <?= $urgency ?>"><?= $cdLabel ?></span>
               </div>
               <div class="sp-bar-wrap">
-                <div class="sp-bar-fill"
-                     style="width:<?= $spRate ?>%;background:<?= htmlspecialchars($ss['color']) ?>">
-                </div>
+                <div class="sp-bar-fill" style="width:<?= $spRate ?>%;background:<?= htmlspecialchars($ss['color']) ?>"></div>
               </div>
               <div class="sp-meta">
                 <span>✓ <?= $ss['completed'] ?> done</span>
@@ -386,7 +347,6 @@ $rate     = $total > 0 ? round(($completed / $total) * 100) : 0;
         </div>
       <?php endif; ?>
 
-      <!-- GENERATE -->
       <div class="generate-bar">
         <p class="section-title" style="margin:0">Schedule</p>
         <form method="POST" action="/schedule/generate.php">
@@ -409,7 +369,7 @@ $rate     = $total > 0 ? round(($completed / $total) * 100) : 0;
       <?php elseif (empty($schedules)): ?>
         <div class="empty">
           <div class="empty-icon">🗓</div>
-          <p>Hit <strong>Generate schedule</strong> and let the AI build your plan.</p>
+          <p>Hit <strong>Generate schedule</strong> to build your plan.</p>
         </div>
       <?php endif; ?>
 
@@ -419,54 +379,49 @@ $rate     = $total > 0 ? round(($completed / $total) * 100) : 0;
     <div>
       <p class="section-title">Upcoming sessions</p>
       <div class="schedule-panel">
-        <div class="schedule-panel-header">
-          <span class="schedule-panel-title">Your plan</span>
-          <span style="font-size:0.72rem;color:var(--ink-3)"><?= count($schedules) ?> sessions</span>
+        <div class="panel-header">
+          <span class="panel-title">Your plan</span>
+          <span class="panel-count"><?= count($schedules) ?> sessions</span>
         </div>
-        <div class="schedule-panel-body">
+        <div class="panel-body">
           <?php if (empty($schedules)): ?>
             <div class="empty-schedule">No sessions yet.<br>Generate a schedule to begin.</div>
           <?php else: ?>
             <?php foreach ($byDate as $date => $sessions):
               $isToday = $date === $today;
-              $isPast  = $date < $today;
               $label   = $isToday ? 'Today' : date('D, M j', strtotime($date));
             ?>
               <div class="date-group">
-                <div class="date-heading <?= $isToday ? 'is-today' : '' ?>">
+                <div class="date-label <?= $isToday ? 'today' : '' ?>">
                   <?= $label ?>
-                  <?php if ($isToday): ?>
-                    <span class="today-pill">Today</span>
-                  <?php endif; ?>
+                  <?php if ($isToday): ?><span class="today-pill">Today</span><?php endif; ?>
                 </div>
-
-                <?php foreach ($sessions as $session): ?>
-                  <div class="session-row <?= $session['status'] !== 'pending' ? $session['status'] : '' ?>">
-                    <div class="session-bar" style="background:<?= htmlspecialchars($session['color']) ?>"></div>
+                <?php foreach ($sessions as $s): ?>
+                  <div class="session-row <?= $s['status'] !== 'pending' ? $s['status'] : '' ?>">
+                    <div class="session-bar" style="background:<?= htmlspecialchars($s['color']) ?>"></div>
                     <div class="session-info">
-                      <p class="session-name"><?= htmlspecialchars($session['subject_name']) ?></p>
-                      <?php if ($session['note']): ?>
-                        <p class="session-note"><?= htmlspecialchars($session['note']) ?></p>
+                      <p class="session-name"><?= htmlspecialchars($s['subject_name']) ?></p>
+                      <?php if ($s['note']): ?>
+                        <p class="session-note"><?= htmlspecialchars($s['note']) ?></p>
                       <?php endif; ?>
                     </div>
-                    <span class="session-dur"><?= $session['duration_hours'] ?>h</span>
-
-                    <?php if ($session['status'] === 'pending'): ?>
+                    <span class="session-dur"><?= $s['duration_hours'] ?>h</span>
+                    <?php if ($s['status'] === 'pending'): ?>
                       <div class="session-actions">
                         <form method="POST" action="/schedule/status.php" style="margin:0">
-                          <input type="hidden" name="id" value="<?= $session['id'] ?>">
+                          <input type="hidden" name="id" value="<?= $s['id'] ?>">
                           <input type="hidden" name="status" value="completed">
                           <button type="submit" class="btn-s done">✓</button>
                         </form>
                         <form method="POST" action="/schedule/status.php" style="margin:0">
-                          <input type="hidden" name="id" value="<?= $session['id'] ?>">
+                          <input type="hidden" name="id" value="<?= $s['id'] ?>">
                           <input type="hidden" name="status" value="missed">
                           <button type="submit" class="btn-s miss">✕</button>
                         </form>
                       </div>
                     <?php else: ?>
-                      <span class="status-pill pill-<?= $session['status'] ?>">
-                        <?= ucfirst($session['status']) ?>
+                      <span class="status-pill pill-<?= $s['status'] ?>">
+                        <?= ucfirst($s['status']) ?>
                       </span>
                     <?php endif; ?>
                   </div>
