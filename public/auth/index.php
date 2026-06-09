@@ -280,6 +280,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       body { grid-template-columns: 1fr; }
       .left-panel { display: none; }
     }
+
+    .demo-divider {
+  display: flex; align-items: center; gap: 0.75rem;
+  margin: 1.25rem 0 1rem;
+  color: var(--ink-3); font-size: 0.8rem;
+}
+.demo-divider::before,
+.demo-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+.btn-demo {
+  display: block; width: 100%; padding: 0.8rem;
+  background: white; color: var(--ink);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.9rem; font-weight: 500;
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  text-align: center; text-decoration: none;
+  transition: border-color 150ms, background 150ms;
+}
+.btn-demo:hover { border-color: var(--ink); background: var(--paper); }
+
   </style>
 </head>
 <body>
@@ -370,8 +392,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="submit" class="btn">Create account →</button>
       </form>
       <p class="footer-text">
-        Already have an account? <a href="?mode=login">Sign in</a>
-      </p>
+  No account yet? <a href="?mode=register">Create one</a>
+</p>
+
+<div class="demo-divider">
+  <span>or</span>
+</div>
+
+<a href="/auth/demo.php" class="btn-demo">
+  Try the demo →
+</a>
 
     <?php else: ?>
       <form method="POST" action="/auth/">
