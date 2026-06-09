@@ -3,7 +3,7 @@
 class GeminiService {
 
     private static string $endpoint =
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
+        'https://api.groq.com/openai/v1/chat/completions';
 
     public static function generateSchedule(
         array $subjects,
@@ -11,11 +11,7 @@ class GeminiService {
         string $today
     ): array {
 
-        // --- MOCK MODE: remove this block once rate limit lifts ---
-        return self::mockSchedule($subjects, $availability, $today);
-        // ----------------------------------------------------------
-
-        $apiKey = getenv('GEMINI_API_KEY');
+        $apiKey = getenv('GROQ_API_KEY');
 
         $subjectLines = '';
         foreach ($subjects as $s) {
@@ -26,8 +22,16 @@ class GeminiService {
         $dayNames   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
         $availLines = '';
         foreach ($availability as $day => $row) {
-            $availLines .= "- {$dayNames[$day]}: {$row['hours_available']} hours\n";
+            $availLines .= "- {$dayNames[$day]} (day {$day}): {$row['hours_available']} hours available\n";
         }
+
+        $forbiddenDays = [];
+        for ($i = 0; $i <= 6; $i++) {
+            if (!isset($availability[$i])) {
+                $forbiddenDays[] = $dayNames[$i];
+            }
+        }
+        $forbiddenLine = implode(', ', $forbiddenDays);
 
         $prompt = <<<PROMPT
 You are a smart study planner. Generate a personalized study schedule in JSON format.
@@ -35,20 +39,23 @@ You are a smart study planner. Generate a personalized study schedule in JSON fo
 SUBJECTS:
 {$subjectLines}
 
-WEEKLY AVAILABILITY:
+AVAILABLE STUDY DAYS (ONLY schedule on these days):
 {$availLines}
+
+DO NOT schedule on: {$forbiddenLine}
 
 TODAY: {$today}
 
 RULES:
-1. Schedule sessions starting from tomorrow.
-2. Only schedule on the available days listed above.
+1. Schedule sessions starting from tomorrow — never on {$today}.
+2. ONLY use the available days listed above. Any session on a forbidden day is invalid.
 3. Each session duration must not exceed the hours available for that day.
 4. Prioritize subjects with higher difficulty and closer exam dates.
-5. Stop scheduling a subject after its exam date.
-6. Spread sessions across multiple days.
-7. Each session should have a short, specific study tip (max 12 words).
-8. Generate enough sessions to cover all subjects adequately before their exams.
+5. Stop scheduling a subject on or after its exam date.
+6. Spread sessions across all available days — do not skip available days.
+7. Each session must have a short specific study tip (max 12 words).
+8. Generate 20-30% MORE sessions than strictly needed — some may be filtered out.
+9. For each available day between tomorrow and the last exam date, try to schedule at least one session.
 
 RESPONSE FORMAT — return ONLY valid JSON, no markdown, no explanation:
 {
@@ -64,22 +71,31 @@ RESPONSE FORMAT — return ONLY valid JSON, no markdown, no explanation:
 PROMPT;
 
         $payload = [
-            'contents' => [
-                ['parts' => [['text' => $prompt]]]
+            'model'    => 'llama-3.3-70b-versatile',
+            'messages' => [
+                [
+                    'role'    => 'system',
+                    'content' => 'You are a study schedule generator. Always respond with valid JSON only, no markdown, no explanation.'
+                ],
+                [
+                    'role'    => 'user',
+                    'content' => $prompt
+                ]
             ],
-            'generationConfig' => [
-                'temperature'     => 0.4,
-                'maxOutputTokens' => 2048,
-            ]
+            'temperature' => 0.4,
+            'max_tokens'  => 2048,
         ];
 
-        $ch = curl_init(self::$endpoint . '?key=' . $apiKey);
+        $ch = curl_init(self::$endpoint);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST           => true,
-            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-            CURLOPT_POSTFIELDS     => json_encode($payload),
-            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_HTTPHEADER     => [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $apiKey,
+            ],
+            CURLOPT_POSTFIELDS => json_encode($payload),
+            CURLOPT_TIMEOUT    => 30,
         ]);
 
         $response = curl_exec($ch);
@@ -87,14 +103,14 @@ PROMPT;
         curl_close($ch);
 
         if (!$response || $httpCode !== 200) {
-            throw new Exception("Gemini API error — HTTP $httpCode");
+            throw new Exception("Groq API error — HTTP $httpCode");
         }
 
         $decoded = json_decode($response, true);
-        $text    = $decoded['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        $text    = $decoded['choices'][0]['message']['content'] ?? '';
 
         $text = preg_replace('/^```json\s*/i', '', trim($text));
-        $text = preg_replace('/```$/', '', trim($text));
+        $text = preg_replace('/```$/',         '', trim($text));
 
         $schedule = json_decode(trim($text), true);
 
@@ -111,9 +127,8 @@ PROMPT;
         string $today
     ): array {
 
-        $sessions  = [];
-        $dayNames  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-        $tips      = [
+        $sessions = [];
+        $tips     = [
             'Focus on key concepts and definitions first.',
             'Practice past exam questions for this topic.',
             'Review your notes and summarize key points.',
@@ -123,15 +138,11 @@ PROMPT;
             'Quiz yourself without looking at notes.',
         ];
 
-        // Sort subjects by exam date ascending
         usort($subjects, fn($a, $b) => strtotime($a['exam_date']) - strtotime($b['exam_date']));
 
-        // Get available day numbers
         $availDays = array_keys($availability);
-
         if (empty($availDays)) return [];
 
-        // Generate sessions for the next 14 days
         $date    = new DateTime($today);
         $date->modify('+1 day');
         $endDate = new DateTime($today);
@@ -146,23 +157,18 @@ PROMPT;
             if (in_array($dayOfWeek, $availDays)) {
                 $hoursLeft = (float) $availability[$dayOfWeek]['hours_available'];
 
-                // Pick subjects for this day — prioritize harder + closer exams
                 foreach ($subjects as $subject) {
                     if ($hoursLeft <= 0) break;
                     if ($dateStr >= $subject['exam_date']) continue;
 
-                    // Allocate hours based on difficulty
-                    $sessionHours = min(
-                        round($subject['difficulty'] * 0.5, 1),
-                        $hoursLeft
-                    );
+                    $sessionHours = min(round($subject['difficulty'] * 0.5, 1), $hoursLeft);
                     if ($sessionHours < 0.5) continue;
 
                     $sessions[] = [
-                        'subject_name' => $subject['name'],
-                        'date'         => $dateStr,
+                        'subject_name'   => $subject['name'],
+                        'date'           => $dateStr,
                         'duration_hours' => $sessionHours,
-                        'note'         => $tips[$tipIndex % count($tips)],
+                        'note'           => $tips[$tipIndex % count($tips)],
                     ];
 
                     $hoursLeft -= $sessionHours;

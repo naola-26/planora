@@ -45,23 +45,39 @@ try {
         $nameToId[strtolower(trim($s['name']))] = $s['id'];
     }
 
-    // Build insert rows
-    $rows = [];
-    foreach ($sessions as $session) {
-        $name      = strtolower(trim($session['subject_name'] ?? ''));
-        $subjectId = $nameToId[$name] ?? null;
+    // Build available date lookup
+$availableDays = array_keys($availability); // e.g. [1, 3, 4]
 
-        if (!$subjectId) continue; // Skip if AI hallucinated a subject name
+// Build insert rows
+$rows = [];
+foreach ($sessions as $session) {
+    $name      = strtolower(trim($session['subject_name'] ?? ''));
+    $subjectId = $nameToId[$name] ?? null;
 
-        $rows[] = [
-            'user_id'        => $user['id'],
-            'subject_id'     => $subjectId,
-            'scheduled_date' => $session['date'],
-            'duration_hours' => (float) $session['duration_hours'],
-            'note'           => $session['note'] ?? null,
-        ];
+    if (!$subjectId) continue;
+
+    // Hard filter — reject sessions on days user didn't pick
+    $sessionDayOfWeek = (int) date('w', strtotime($session['date']));
+    if (!in_array($sessionDayOfWeek, $availableDays)) continue;
+
+    // Reject sessions past exam date
+    $subjectExamDate = null;
+    foreach ($subjects as $s) {
+        if ($s['id'] === $subjectId) {
+            $subjectExamDate = $s['exam_date'];
+            break;
+        }
     }
+    if ($subjectExamDate && $session['date'] >= $subjectExamDate) continue;
 
+    $rows[] = [
+        'user_id'        => $user['id'],
+        'subject_id'     => $subjectId,
+        'scheduled_date' => $session['date'],
+        'duration_hours' => (float) $session['duration_hours'],
+        'note'           => $session['note'] ?? null,
+    ];
+}
     // Clear old schedule and insert new one
     Schedule::clearForUser($user['id']);
     Schedule::insertMany($rows);
