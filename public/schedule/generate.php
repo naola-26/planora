@@ -74,7 +74,7 @@ foreach ($sessions as $session) {
         'user_id'        => $user['id'],
         'subject_id'     => $subjectId,
         'scheduled_date' => $session['date'],
-        'duration_hours' => (float) $session['duration_hours'],
+       'duration_hours' => max(0.5, (float) $session['duration_hours']),
         'note'           => $session['note'] ?? null,
     ];
 }
