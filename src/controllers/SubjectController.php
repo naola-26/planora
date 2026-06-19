@@ -14,7 +14,8 @@ class SubjectController {
         $name       = trim($_POST['name']       ?? '');
         $difficulty = (int)($_POST['difficulty'] ?? 0);
         $examDate   = trim($_POST['exam_date']  ?? '');
-
+        $topics     = trim($_POST['topics']     ?? '');
+    
         if (!$name || !$difficulty || !$examDate) {
             return ['error' => 'All fields are required.'];
         }
@@ -27,15 +28,17 @@ class SubjectController {
         if (strtotime($examDate) <= time()) {
             return ['error' => 'Exam date must be in the future.'];
         }
+        if (strlen($topics) > 500) {
+            return ['error' => 'Topics list is too long — keep it under 500 characters.'];
+        }
         if (Subject::countForUser($userId) >= 10) {
             return ['error' => 'Maximum of 10 subjects allowed.'];
         }
-
-        // Pick a color based on how many subjects exist
+    
         $count = Subject::countForUser($userId);
         $color = self::$colors[$count % count(self::$colors)];
-
-        Subject::create($userId, $name, $difficulty, $examDate, $color);
+    
+        Subject::create($userId, $name, $difficulty, $examDate, $color, $topics ?: null);
         return ['success' => true];
     }
 

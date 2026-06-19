@@ -257,7 +257,15 @@ $minDate  = date('Y-m-d', strtotime('+1 day'));
           <div class="form-group full">
             <label for="name">Subject name</label>
             <input class="form-input" type="text" id="name" name="name"
-                   placeholder="e.g. Database Systems" required maxlength="100">
+                  placeholder="e.g. Database Systems" required maxlength="100">
+          </div>
+          <div class="form-group full">
+            <label for="topics">
+              Key topics <span style="color:var(--ink-3);font-weight:400;">(optional, but recommended)</span>
+            </label>
+            <input class="form-input" type="text" id="topics" name="topics"
+                  placeholder="e.g. normalization, indexing, SQL joins, transactions"
+                  maxlength="500">
           </div>
           <div class="form-group">
             <label>Difficulty — <span id="diff-value-label" style="color:var(--accent);font-weight:500;">Medium</span></label>
@@ -273,9 +281,9 @@ $minDate  = date('Y-m-d', strtotime('+1 day'));
           <div class="form-group">
             <label for="exam_date">Exam date</label>
             <input class="form-input" type="date" id="exam_date" name="exam_date"
-              min="<?= $minDate ?>" required>
+                  min="<?= $minDate ?>" required>
           </div>
-        </div>
+        </div>  
         <button type="submit" class="btn-submit" id="submit-btn" disabled>
           Add subject →
         </button>

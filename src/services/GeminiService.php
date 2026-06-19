@@ -14,10 +14,14 @@ class GeminiService {
         $apiKey = getenv('GROQ_API_KEY');
 
         $subjectLines = '';
-        foreach ($subjects as $s) {
-            $daysLeft = (int) ceil((strtotime($s['exam_date']) - strtotime($today)) / 86400);
-            $subjectLines .= "- {$s['name']} | difficulty: {$s['difficulty']}/5 | exam in {$daysLeft} days ({$s['exam_date']})\n";
-        }
+            foreach ($subjects as $s) {
+                $daysLeft = (int) ceil((strtotime($s['exam_date']) - strtotime($today)) / 86400);
+                $topicsLine = !empty($s['topics'])
+                    ? "topics to cover: {$s['topics']}"
+                    : "no specific topics given — infer the 4-6 most standard topics typically taught in a course with this exact title";
+
+                $subjectLines .= "- {$s['name']} | difficulty: {$s['difficulty']}/5 | exam in {$daysLeft} days ({$s['exam_date']}) | {$topicsLine}\n";
+            }
 
         $dayNames   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
         $availLines = '';
@@ -53,9 +57,9 @@ RULES:
 4. Prioritize subjects with higher difficulty and closer exam dates.
 5. Stop scheduling a subject on or after its exam date.
 6. Spread sessions across all available days — do not skip available days.
-7. Each session must have a short specific study tip (max 12 words).
+7. Each session's note must reference a SPECIFIC topic for that subject (e.g. "Practice SQL joins and subqueries" not "Study the material"). Rotate through different topics across sessions — don't repeat the same topic for every session of a subject.
 8. Generate 20-30% MORE sessions than strictly needed — some may be filtered out.
-9. For each available day between tomorrow and the last exam date, try to schedule at least one session.
+9. If specific topics were given for a subject, distribute them across that subject's sessions so each session targets a different topic. If no topics were given, infer realistic topics from the course title and do the same.
 
 RESPONSE FORMAT — return ONLY valid JSON, no markdown, no explanation:
 {
@@ -98,12 +102,13 @@ PROMPT;
             CURLOPT_TIMEOUT    => 30,
         ]);
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $response  = curl_exec($ch);
+        $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
 
         if (!$response || $httpCode !== 200) {
-            throw new Exception("Groq API error — HTTP $httpCode");
+           throw new Exception("Groq API error — HTTP $httpCode — $curlError");
         }
 
         $decoded = json_decode($response, true);

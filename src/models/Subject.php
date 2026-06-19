@@ -18,14 +18,15 @@ class Subject {
         string $name,
         int $difficulty,
         string $examDate,
-        string $color
+        string $color,
+        ?string $topics = null
     ): int {
         $pdo = getDB();
         $stmt = $pdo->prepare(
-            'INSERT INTO subjects (user_id, name, difficulty, exam_date, color)
-             VALUES (?, ?, ?, ?, ?)'
+            'INSERT INTO subjects (user_id, name, difficulty, topics, exam_date, color)
+             VALUES (?, ?, ?, ?, ?, ?)'
         );
-        $stmt->execute([$userId, $name, $difficulty, $examDate, $color]);
+        $stmt->execute([$userId, $name, $difficulty, $topics, $examDate, $color]);
         return (int) $pdo->lastInsertId();
     }
 
