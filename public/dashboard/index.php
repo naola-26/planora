@@ -60,7 +60,8 @@ $rate      = $total > 0 ? round(($completed / $total) * 100) : 0;
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StudyPlanner — Dashboard</title>
+  <title>Planora — Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
@@ -94,13 +95,29 @@ $rate      = $total > 0 ? round(($completed / $total) * 100) : 0;
       border-bottom: 1px solid var(--border);
       position: sticky; top: 0; z-index: 10;
     }
-    .nav-logo { display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 500; color: var(--ink); text-decoration: none; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 600; color: var(--ink); text-decoration: none; flex-shrink: 0; }
     .nav-logo-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
     .nav-links { display: flex; align-items: center; gap: 2rem; }
     .nav-links a { font-size: 0.85rem; color: var(--ink-3); text-decoration: none; transition: color 150ms; }
     .nav-links a:hover { color: var(--ink); }
     .nav-links a.active { color: var(--accent); font-weight: 500; }
-    .nav-right { font-size: 0.8rem; color: var(--ink-3); }
+
+    .nav-user { display: flex; align-items: center; gap: 10px; flex-shrink: 0; white-space: nowrap; }
+    .nav-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--accent); color: white;
+      font-size: 0.75rem; font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; line-height: 1;
+      font-family: 'DM Sans', system-ui, sans-serif;
+    }
+    .nav-name { font-size: 0.82rem; font-weight: 500; color: var(--ink-2); white-space: nowrap; }
+    .nav-logout {
+      font-size: 0.78rem; color: var(--ink-3); text-decoration: none;
+      padding: 4px 10px; border: 1px solid var(--border); border-radius: 99px;
+      transition: all 150ms; white-space: nowrap;
+    }
+    .nav-logout:hover { border-color: var(--error); color: var(--error); }
 
     .container { max-width: 960px; margin: 0 auto; padding: 2.5rem 2rem; }
 
@@ -108,28 +125,15 @@ $rate      = $total > 0 ? round(($completed / $total) * 100) : 0;
     .msg-success { background: #f0faf5; border: 1px solid #a8e0c4; color: var(--success); }
     .msg-error   { background: #fdf2f2; border: 1px solid #f5c6c6; color: var(--error); }
 
-    /* STATS */
-    .stats-row {
-      display: grid; grid-template-columns: repeat(5, 1fr);
-      gap: 10px; margin-bottom: 1.25rem;
-    }
-    .stat-card {
-      background: white; border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 1.1rem 1.25rem;
-    }
+    .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+    .stat-card { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem 1.25rem; }
     .stat-num { font-size: 1.75rem; font-weight: 700; color: var(--ink); line-height: 1; margin-bottom: 4px; }
-    .stat-num.c-accent   { color: var(--accent); }
-    .stat-num.c-success  { color: var(--success); }
-    .stat-num.c-error    { color: var(--error); }
+    .stat-num.c-accent  { color: var(--accent); }
+    .stat-num.c-success { color: var(--success); }
+    .stat-num.c-error   { color: var(--error); }
     .stat-label { font-size: 0.7rem; color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; }
 
-    /* COMPLETION */
-    .completion-card {
-      background: white; border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 1rem 1.25rem;
-      display: flex; align-items: center; gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
+    .completion-card { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
     .completion-label { font-size: 0.82rem; color: var(--ink-2); white-space: nowrap; font-weight: 500; }
     .bar-wrap { flex: 1; background: var(--paper-2); border-radius: 99px; height: 7px; overflow: hidden; }
     .bar-fill { height: 100%; border-radius: 99px; transition: width 600ms ease; }
@@ -139,19 +143,11 @@ $rate      = $total > 0 ? round(($completed / $total) * 100) : 0;
     .bar-fill.zero    { background: var(--border); }
     .completion-pct { font-size: 0.9rem; font-weight: 700; color: var(--ink); min-width: 38px; text-align: right; }
 
-    /* TWO COL */
     .two-col { display: grid; grid-template-columns: 1fr 380px; gap: 1.25rem; align-items: start; }
-
-    /* SECTION TITLE */
     .section-title { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 0.75rem; }
 
-    /* SUBJECT PROGRESS */
     .subject-progress-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.5rem; }
-
-    .sp-card {
-      background: white; border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 1rem 1.25rem;
-    }
+    .sp-card { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; }
     .sp-top { display: flex; align-items: center; gap: 10px; margin-bottom: 0.6rem; }
     .sp-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
     .sp-name { font-size: 0.9rem; font-weight: 500; color: var(--ink); flex: 1; min-width: 0; }
@@ -159,13 +155,10 @@ $rate      = $total > 0 ? round(($completed / $total) * 100) : 0;
     .sp-countdown.urgent  { background: #fdf2f2; color: var(--error); }
     .sp-countdown.soon    { background: #fef9ec; color: var(--warning); }
     .sp-countdown.relaxed { background: var(--paper-2); color: var(--ink-3); }
-
     .sp-bar-wrap { background: var(--paper-2); border-radius: 99px; height: 4px; overflow: hidden; margin-bottom: 0.6rem; }
     .sp-bar-fill { height: 100%; border-radius: 99px; transition: width 600ms ease; }
-
     .sp-meta { display: flex; gap: 1rem; font-size: 0.72rem; color: var(--ink-3); }
 
-    /* GENERATE */
     .generate-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
     .btn-generate {
       display: inline-flex; align-items: center; gap: 6px;
@@ -177,50 +170,25 @@ $rate      = $total > 0 ? round(($completed / $total) * 100) : 0;
     }
     .btn-generate:hover { opacity: 0.88; }
 
-    /* EMPTY */
     .empty { text-align: center; padding: 2.5rem 1rem; color: var(--ink-3); font-size: 0.875rem; border: 1.5px dashed var(--border); border-radius: var(--radius); }
     .empty-icon { font-size: 1.75rem; margin-bottom: 0.5rem; }
 
-    /* SCHEDULE PANEL */
-    .schedule-panel {
-      background: white; border: 1px solid var(--border);
-      border-radius: var(--radius); overflow: hidden;
-      position: sticky; top: 80px;
-    }
-    .panel-header {
-      padding: 0.9rem 1.25rem;
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-    }
+    .schedule-panel { background: white; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; position: sticky; top: 80px; }
+    .panel-header { padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
     .panel-title { font-size: 0.9rem; font-weight: 600; color: var(--ink); }
     .panel-count { font-size: 0.75rem; color: var(--ink-3); }
     .panel-body { max-height: 560px; overflow-y: auto; }
 
-    /* DATE GROUP */
     .date-group { padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--paper-2); }
     .date-group:last-child { border-bottom: none; }
-
-    .date-label {
-      font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em;
-      text-transform: uppercase; color: var(--ink-3);
-      margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
-    }
+    .date-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
     .date-label.today { color: var(--accent); }
     .today-pill { font-size: 0.6rem; background: var(--accent); color: white; padding: 1px 6px; border-radius: 99px; }
 
-    /* SESSION ROW */
-    .session-row {
-      display: grid;
-      grid-template-columns: 3px 1fr auto auto;
-      gap: 10px;
-      align-items: start;
-      padding: 8px 0;
-      border-bottom: 1px solid var(--paper-2);
-    }
+    .session-row { display: grid; grid-template-columns: 3px 1fr auto auto; gap: 10px; align-items: start; padding: 8px 0; border-bottom: 1px solid var(--paper-2); }
     .session-row:last-child { border-bottom: none; }
     .session-row.completed { opacity: 0.5; }
     .session-row.missed { opacity: 0.65; }
-
     .session-bar { width: 3px; border-radius: 99px; min-height: 28px; align-self: stretch; }
     .session-info { min-width: 0; }
     .session-name { font-size: 0.82rem; font-weight: 500; color: var(--ink); line-height: 1.3; margin-bottom: 2px; }
@@ -234,8 +202,8 @@ $rate      = $total > 0 ? round(($completed / $total) * 100) : 0;
       background: white; cursor: pointer; color: var(--ink-2);
       transition: all 120ms; font-family: 'DM Sans', system-ui, sans-serif;
     }
-    .btn-s.done:hover  { background: #f0faf5; border-color: #a8e0c4; color: var(--success); }
-    .btn-s.miss:hover  { background: #fdf2f2; border-color: #f5c6c6; color: var(--error); }
+    .btn-s.done:hover { background: #f0faf5; border-color: #a8e0c4; color: var(--success); }
+    .btn-s.miss:hover { background: #fdf2f2; border-color: #f5c6c6; color: var(--error); }
 
     .status-pill { font-size: 0.65rem; font-weight: 600; padding: 2px 7px; border-radius: 99px; white-space: nowrap; }
     .pill-completed { background: #f0faf5; color: var(--success); }
@@ -255,17 +223,18 @@ $rate      = $total > 0 ? round(($completed / $total) * 100) : 0;
 <nav>
   <a href="/dashboard/" class="nav-logo">
     <div class="nav-logo-dot"></div>
-    StudyPlanner
+    Planora
   </a>
   <div class="nav-links">
     <a href="/subjects/">Subjects</a>
     <a href="/availability/">Availability</a>
     <a href="/dashboard/" class="active">Dashboard</a>
   </div>
-  <span class="nav-right">
-    <?= htmlspecialchars($user['name']) ?> &nbsp;·&nbsp;
-    <a href="/auth/?action=logout" style="color:var(--ink-3);text-decoration:none;">Log out</a>
-  </span>
+  <div class="nav-user">
+    <div class="nav-avatar"><?= strtoupper(substr($user['name'], 0, 1)) ?></div>
+    <span class="nav-name"><?= htmlspecialchars(explode(' ', $user['name'])[0]) ?></span>
+    <a href="/auth/?action=logout" class="nav-logout">Log out</a>
+  </div>
 </nav>
 
 <div class="container">
@@ -277,7 +246,6 @@ $rate      = $total > 0 ? round(($completed / $total) * 100) : 0;
     <div class="msg msg-error">⚠ <?= htmlspecialchars($errorMsg) ?></div>
   <?php endif; ?>
 
-  <!-- STATS -->
   <div class="stats-row">
     <div class="stat-card">
       <p class="stat-num c-accent"><?= $total ?></p>
@@ -301,10 +269,7 @@ $rate      = $total > 0 ? round(($completed / $total) * 100) : 0;
     </div>
   </div>
 
-  <!-- COMPLETION BAR -->
-  <?php
-    $barClass = $total === 0 ? 'zero' : ($rate >= 70 ? 'good' : ($rate >= 40 ? 'warning' : 'danger'));
-  ?>
+  <?php $barClass = $total === 0 ? 'zero' : ($rate >= 70 ? 'good' : ($rate >= 40 ? 'warning' : 'danger')); ?>
   <div class="completion-card">
     <span class="completion-label">Overall completion</span>
     <div class="bar-wrap">
@@ -314,10 +279,7 @@ $rate      = $total > 0 ? round(($completed / $total) * 100) : 0;
   </div>
 
   <div class="two-col">
-
-    <!-- LEFT -->
     <div>
-
       <?php if (!empty($subjectStats)): ?>
         <p class="section-title">Subject progress</p>
         <div class="subject-progress-list">
@@ -372,10 +334,8 @@ $rate      = $total > 0 ? round(($completed / $total) * 100) : 0;
           <p>Hit <strong>Generate schedule</strong> to build your plan.</p>
         </div>
       <?php endif; ?>
-
     </div>
 
-    <!-- RIGHT: SCHEDULE PANEL -->
     <div>
       <p class="section-title">Upcoming sessions</p>
       <div class="schedule-panel">
@@ -432,7 +392,6 @@ $rate      = $total > 0 ? round(($completed / $total) * 100) : 0;
         </div>
       </div>
     </div>
-
   </div>
 </div>
 </body>
