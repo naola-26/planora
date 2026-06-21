@@ -1,51 +1,48 @@
 # Planora
 
-**An AI-powered study planner that builds a personalized schedule around your exams, your free time, and what you actually need to study.**
+An AI-powered study planner. Tell it your subjects, your exam dates, and the days you're free to study, and it builds a session-by-session schedule weighted by difficulty and how close each exam is.
 
-🔗 **Live demo:** [planora-production-cf26.up.railway.app](https://planora-production-cf26.up.railway.app) — click "Try the demo," no signup needed.
+**Live demo:** [planora-production-cf26.up.railway.app](https://planora-production-cf26.up.railway.app). Click "Try the demo," no signup.
 
 ![Planora dashboard](docs/screenshot-dashboard.png)
 
 ---
 
-## Why I built this
+## The problem
 
-Most study planners are glorified to-do lists — you type in a task, you check it off. They don't think about *when* you should study something, *how much* time it deserves, or *what* to focus on.
+A to-do list checks off tasks. It doesn't decide when you should study calculus versus when you should study history, or how many hours either one deserves before an exam. Planora makes that call using AI, then tracks what actually happened: completed sessions, missed ones, hours studied per subject.
 
-Planora does. Tell it your subjects, your exam dates, and which days you're actually free — and it generates a real schedule using AI, weighted by how hard each subject is and how close the exam is. Miss a session? It's tracked. Fall behind? The data shows it on your dashboard immediately.
+## Features
 
-## What it does
-
-- **AI-generated schedules** — powered by Llama 3.3 70B via the Groq API. Give it a course name and (optionally) the topics you need to cover, and it builds session-by-session study blocks with specific, topic-grounded notes — not generic filler like "study the material."
-- **Respects your real availability** — pick which days you're free and how many hours, and the schedule never violates those constraints (enforced server-side, not just trusted to the AI).
-- **Progress tracking** — mark sessions done or missed with one click. Your completion rate, hours studied, and per-subject progress update live.
-- **Adaptive by design** — the schedule reflects reality, not a static plan you made once and ignored.
-- **Demo mode** — a fully seeded guest account so anyone can try the whole product without creating an account.
+- **AI-generated schedules.** Llama 3.3 70B (via Groq) builds the plan. Give it a course name and optionally the topics you need to cover, and it writes specific study notes per session ("Practice SQL joins and subqueries") instead of generic filler.
+- **Availability constraints, enforced server-side.** The user picks free days and hours. If the AI schedules a session on a day the user didn't select, the backend rejects it before it reaches the database. The AI proposes; the server enforces.
+- **Progress tracking.** Mark sessions completed or missed with one click. Completion rate, hours studied, and per-subject progress update immediately.
+- **Demo mode.** A seeded guest account, so anyone can try the full product without creating one.
 
 ## Tech stack
 
 | Layer | Tech |
 |---|---|
-| Backend | PHP 8, vanilla — no framework, by choice |
+| Backend | PHP 8, vanilla |
 | Database | MySQL |
 | AI | Groq API (Llama 3.3 70B) |
 | Frontend | HTML, CSS, vanilla JS |
 | Hosting | Railway |
 
-No framework was used on purpose. Writing the routing, auth, and data layer by hand was the point — it's the clearest way to actually show how the pieces fit together.
+No framework. The routing, auth, and data layer are all written by hand, which is the clearest way to show how the pieces actually connect.
 
-## How the AI scheduling works
+## How the scheduling works
 
-1. User adds subjects with a difficulty rating (1–5), an exam date, and optionally a few key topics.
-2. User sets which days of the week they're free and how many hours per day.
-3. On "Generate schedule," the app builds a prompt combining all of that and sends it to Llama 3.3 via Groq.
-4. The AI returns a list of study sessions — date, duration, subject, and a specific note (e.g. *"Practice SQL joins and subqueries"* instead of *"Study the material"*).
-5. **Every session is validated server-side** before it touches the database — if the AI schedules something on a day the user didn't select, or after a subject's exam date, it's silently rejected. The AI proposes; the backend enforces the actual rules.
-6. If no topics were given for a subject, the AI is prompted to infer realistic topics from the course title itself.
+1. The user adds subjects with a difficulty rating (1–5), an exam date, and optionally a few key topics.
+2. The user sets which days they're free and how many hours per day.
+3. On "Generate schedule," the app builds a prompt from that data and sends it to Llama 3.3 via Groq.
+4. The AI returns a list of sessions: date, duration, subject, and a specific note.
+5. The backend validates every session before inserting it. Anything scheduled on a day the user didn't pick, or after a subject's exam date, gets dropped.
+6. If a subject has no listed topics, the prompt asks the AI to infer the standard topics for a course with that title.
 
 ## Database schema
 
-Five tables: `users`, `subjects`, `availability`, `schedules`, and `reschedule_log` (tracks every time a session gets adapted). Relationships are straightforward — one user has many subjects, many availability slots, and many scheduled sessions, each tied back to a subject.
+Five tables: `users`, `subjects`, `availability`, `schedules`, and `reschedule_log`. One user has many subjects, many availability slots, many scheduled sessions. Each session ties back to a subject.
 
 ## Running it locally
 
@@ -67,13 +64,13 @@ php -S localhost:8000 -t public/
 
 Visit `http://localhost:8000`.
 
-## What I'd build next
+## What's next
 
-- Calendar export (ICS) so sessions show up in Google Calendar / Apple Calendar
+- Calendar export (ICS) so sessions show up in Google Calendar or Apple Calendar
 - Email reminders before a scheduled session
-- A "why this schedule" explainer showing the AI's reasoning per session
-- React frontend for the same backend, decoupled via a REST API
+- A per-session breakdown of the AI's reasoning
+- A React frontend on the same backend, talking to it over a REST API
 
-## About
+## Author
 
-Built by [Naol Shimelis](https://github.com/naola-26), a third-year Information Systems student, as part of a summer portfolio project.
+[Naol Shimelis](https://github.com/naola-26)
