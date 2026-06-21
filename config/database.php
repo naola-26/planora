@@ -22,7 +22,8 @@ function getDB(): PDO {
             );
         } catch (PDOException $e) {
             http_response_code(500);
-            die(json_encode(['error' => $e->getMessage()]));        }
+            die(json_encode(['error' => $e->getMessage()]));
+        }
     }
 
     return $pdo;

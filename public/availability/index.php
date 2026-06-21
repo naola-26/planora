@@ -1,6 +1,9 @@
 <?php
-$env = parse_ini_file(__DIR__ . '/../../.env');
-foreach ($env as $key => $value) putenv("$key=$value");
+$envPath = __DIR__ . '/../../.env';
+if (file_exists($envPath)) {
+    $env = parse_ini_file($envPath);
+    foreach ($env as $key => $value) putenv("$key=$value");
+}
 
 require_once __DIR__ . '/../../src/helpers/auth.php';
 require_once __DIR__ . '/../../src/controllers/AvailabilityController.php';
