@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS planora CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE planora;
+CREATE DATABASE IF NOT EXISTS study_planner CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE study_planner;
 
 CREATE TABLE users (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
