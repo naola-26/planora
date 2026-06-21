@@ -1,0 +1,7 @@
+{
+    "name": "naola-26/planora",
+    "description": "AI-powered study planner",
+    "require": {
+        "php": ">=8.1"
+    }
+}
