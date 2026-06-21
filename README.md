@@ -51,8 +51,8 @@ git clone https://github.com/naola-26/planora.git
 cd planora
 
 # Create the database
-mysql -u root -p -e "CREATE DATABASE planora;"
-mysql -u root -p planora < schema.sql
+mysql -u root -p -e "CREATE DATABASE study_planner;"
+mysql -u root -p study_planner < schema.sql
 
 # Configure environment
 cp .env.example .env
